@@ -1,0 +1,91 @@
+#include <iostream>
+#include <vector>
+
+// Heap class to implement Min-Heap or Max-Heap based on 'isMax' flag
+class Heap {
+private:
+    std::vector<int> data; // Vector to store heap elements
+    bool isMax; // Flag to indicate whether it's a Max-Heap (true) or Min-Heap (false)
+
+    // Maintains heap property after insertion (bottom-up)
+    void heapifyUp(int index) {
+        if (index == 0) return; // Reached root
+
+        int parent = (index - 1) / 2;
+
+        // Swap with parent if heap property is violated
+        if ((isMax && data[index] > data[parent]) ||
+            (!isMax && data[index] < data[parent])) {
+            std::swap(data[index], data[parent]);
+            heapifyUp(parent); // Recursively heapify up
+        }
+    }
+
+    // Maintains heap property after deletion or replacement (top-down)
+    void heapifyDown(int index) {
+        int size = data.size();
+        int left = 2 * index + 1;
+        int right = 2 * index + 2;
+        int selected = index;
+
+        // Select the appropriate child based on heap type
+        if (left < size && 
+            ((isMax && data[left] > data[selected]) || (!isMax && data[left] < data[selected]))) {
+            selected = left;
+        }
+
+        if (right < size && 
+            ((isMax && data[right] > data[selected]) || (!isMax && data[right] < data[selected]))) {
+            selected = right;
+        }
+
+        // Swap and continue heapifying if necessary
+        if (selected != index) {
+            std::swap(data[index], data[selected]);
+            heapifyDown(selected);
+        }
+    }
+
+public:
+    // Constructor to specify if it is Max-Heap or Min-Heap
+    Heap(bool maxHeap = true) : isMax(maxHeap) {}
+
+    // Insert a new value and maintain heap
+    void insert(int val) {
+        data.push_back(val);
+        heapifyUp(data.size() - 1);
+    }
+
+    // Return the top element (max or min), or -1 if heap is empty
+    int getTop() const {
+        if (data.empty()) {
+            std::cerr << "Heap is empty.\n";
+            return -1;
+        }
+        return data[0]; // Root element of the heap
+    }
+};
+
+int main() {
+    int n;
+    std::cout << "Enter number of students: ";
+    std::cin >> n;
+
+    // Create both max and min heaps
+    Heap maxHeap(true);  // Max-Heap for finding maximum marks
+    Heap minHeap(false); // Min-Heap for finding minimum marks
+
+    std::cout << "Enter marks of " << n << " students:\n";
+    for (int i = 0; i < n; ++i) {
+        int mark;
+        std::cin >> mark;
+        maxHeap.insert(mark); // Insert into Max-Heap
+        minHeap.insert(mark); // Insert into Min-Heap
+    }
+
+    // Display the max and min marks
+    std::cout << "Maximum marks: " << maxHeap.getTop() << "\n";
+    std::cout << "Minimum marks: " << minHeap.getTop() << "\n";
+
+    return 0;
+}

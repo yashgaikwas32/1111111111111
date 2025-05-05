@@ -1,0 +1,277 @@
+#include <iostream>
+#include <string>
+#include <algorithm> // For std::max()
+
+// Dictionary implemented using AVL Tree for balanced insert/delete/search operations
+class Dictionary {
+private:
+    // Structure representing a node in the AVL tree
+    struct Node {
+        std::string keyword; // The word to be stored
+        std::string meaning; // Its meaning
+        int height;          // Height of the node (for balancing)
+        Node* left;          // Left child
+        Node* right;         // Right child
+
+        // Constructor for Node
+        Node(std::string k, std::string m) : keyword(k), meaning(m), height(1), left(nullptr), right(nullptr) {}
+    };
+
+    Node* root; // Root of the AVL tree
+
+    // Get the height of a node
+    int height(Node* node) {
+        return node ? node->height : 0;
+    }
+
+    // Get balance factor of a node
+    int balanceFactor(Node* node) {
+        return node ? height(node->left) - height(node->right) : 0;
+    }
+
+    // Update the height of a node
+    void updateHeight(Node* node) {
+        node->height = 1 + std::max(height(node->left), height(node->right));
+    }
+
+    // Right rotation for LL case
+    Node* rotateRight(Node* y) {
+        Node* x = y->left;
+        Node* T2 = x->right;
+
+        // Perform rotation
+        x->right = y;
+        y->left = T2;
+
+        // Update heights
+        updateHeight(y);
+        updateHeight(x);
+
+        return x; // New root
+    }
+
+    // Left rotation for RR case
+    Node* rotateLeft(Node* x) {
+        Node* y = x->right;
+        Node* T2 = y->left;
+
+        // Perform rotation
+        y->left = x;
+        x->right = T2;
+
+        // Update heights
+        updateHeight(x);
+        updateHeight(y);
+
+        return y; // New root
+    }
+
+    // Balance the tree at the given node
+    Node* balance(Node* node) {
+        updateHeight(node);
+        int bf = balanceFactor(node);
+
+        // Left heavy
+        if (bf > 1) {
+            if (balanceFactor(node->left) < 0)
+                node->left = rotateLeft(node->left); // Left-Right case
+            return rotateRight(node); // Left-Left case
+        }
+        // Right heavy
+        else if (bf < -1) {
+            if (balanceFactor(node->right) > 0)
+                node->right = rotateRight(node->right); // Right-Left case
+            return rotateLeft(node); // Right-Right case
+        }
+        return node; // Already balanced
+    }
+
+    // Recursive insert function
+    Node* insert(Node* node, std::string key, std::string meaning) {
+        if (!node) // Base case: insert new node
+            return new Node(key, meaning);
+        if (key < node->keyword)
+            node->left = insert(node->left, key, meaning);
+        else if (key > node->keyword)
+            node->right = insert(node->right, key, meaning);
+        else {
+            std::cout << "Keyword already exists. Use update.\n";
+            return node;
+        }
+
+        return balance(node); // Rebalance tree after insertion
+    }
+
+    // Find the node with the smallest key
+    Node* findMin(Node* node) {
+        while (node->left)
+            node = node->left;
+        return node;
+    }
+
+    // Recursive delete function
+    Node* remove(Node* node, std::string key) {
+        if (!node) return nullptr;
+
+        if (key < node->keyword)
+            node->left = remove(node->left, key);
+        else if (key > node->keyword)
+            node->right = remove(node->right, key);
+        else {
+            // Node with one or zero children
+            if (!node->left || !node->right) {
+                Node* temp = node->left ? node->left : node->right;
+                delete node;
+                return temp;
+            }
+            // Node with two children: replace with inorder successor
+            Node* successor = findMin(node->right);
+            node->keyword = successor->keyword;
+            node->meaning = successor->meaning;
+            node->right = remove(node->right, successor->keyword);
+        }
+
+        return balance(node); // Rebalance after deletion
+    }
+
+    // Update meaning of an existing keyword
+    Node* update(Node* node, std::string key, std::string newMeaning) {
+        if (!node) return nullptr;
+        if (key < node->keyword)
+            node->left = update(node->left, key, newMeaning);
+        else if (key > node->keyword)
+            node->right = update(node->right, key, newMeaning);
+        else
+            node->meaning = newMeaning; // Update found
+        return node;
+    }
+
+    // Display dictionary in ascending order
+    void displayAscending(Node* node) {
+        if (!node) return;
+        displayAscending(node->left);
+        std::cout << node->keyword << ": " << node->meaning << "\n";
+        displayAscending(node->right);
+    }
+
+    // Display dictionary in descending order
+    void displayDescending(Node* node) {
+        if (!node) return;
+        displayDescending(node->right);
+        std::cout << node->keyword << ": " << node->meaning << "\n";
+        displayDescending(node->left);
+    }
+
+    // Get height of the tree
+    int getHeight(Node* node) {
+        return height(node);
+    }
+
+    // Delete all nodes (used in destructor)
+    void destroyTree(Node* node) {
+        if (!node) return;
+        destroyTree(node->left);
+        destroyTree(node->right);
+        delete node;
+    }
+
+public:
+    // Constructor initializes root to nullptr
+    Dictionary() : root(nullptr) {}
+
+    // Destructor frees memory
+    ~Dictionary() {
+        destroyTree(root);
+    }
+
+    // Add a new keyword and its meaning
+    void add(std::string key, std::string meaning) {
+        root = insert(root, key, meaning);
+    }
+
+    // Delete a keyword
+    void deleteKeyword(std::string key) {
+        root = remove(root, key);
+    }
+
+    // Update meaning of a keyword
+    void updateMeaning(std::string key, std::string newMeaning) {
+        root = update(root, key, newMeaning);
+    }
+
+    // Display dictionary (ascending or descending order)
+    void display(bool ascending = true) {
+        if (ascending)
+            displayAscending(root);
+        else
+            displayDescending(root);
+    }
+
+    // Get maximum comparisons needed during search (i.e., tree height)
+    int maxComparisons() {
+        return getHeight(root);
+    }
+};
+
+//////////////////////////////////////////////////////////////
+
+// Main function: provides user interface for dictionary operations
+int main() {
+    Dictionary dict;
+    int choice;
+    std::string key, meaning;
+
+    while (true) {
+        std::cout << "\n--- Dictionary Menu ---\n";
+        std::cout << "1. Add Keyword\n";
+        std::cout << "2. Delete Keyword\n";
+        std::cout << "3. Update Meaning\n";
+        std::cout << "4. Display Ascending\n";
+        std::cout << "5. Display Descending\n";
+        std::cout << "6. Max Comparisons for Search\n";
+        std::cout << "7. Exit\n";
+        std::cout << "Enter choice: ";
+        std::cin >> choice;
+        std::cin.ignore(); // Clear newline character
+
+        switch (choice) {
+        case 1:
+            std::cout << "Enter keyword: ";
+            getline(std::cin, key);
+            std::cout << "Enter meaning: ";
+            getline(std::cin, meaning);
+            dict.add(key, meaning);
+            break;
+        case 2:
+            std::cout << "Enter keyword to delete: ";
+            getline(std::cin, key);
+            dict.deleteKeyword(key);
+            break;
+        case 3:
+            std::cout << "Enter keyword to update: ";
+            getline(std::cin, key);
+            std::cout << "Enter new meaning: ";
+            getline(std::cin, meaning);
+            dict.updateMeaning(key, meaning);
+            break;
+        case 4:
+            std::cout << "Dictionary (Ascending Order):\n";
+            dict.display(true);
+            break;
+        case 5:
+            std::cout << "Dictionary (Descending Order):\n";
+            dict.display(false);
+            break;
+        case 6:
+            std::cout << "Maximum comparisons for search: " << dict.maxComparisons() << "\n";
+            break;
+        case 7:
+            std::cout << "Exiting...\n";
+            return 0;
+        default:
+            std::cout << "Invalid choice. Try again.\n";
+        }
+    }
+
+    return 0;
+}

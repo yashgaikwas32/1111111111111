@@ -1,0 +1,182 @@
+#include <iostream>
+#include <string>
+#include <functional> // For std::hash (optional improvement)
+
+using namespace std;
+
+// Template Dictionary class with key type T1 and value type T2
+template <typename T1, typename T2>
+class Dictionary {
+    // Node structure for each entry in the hash table (linked list node)
+    struct Node {
+        T1 key;
+        T2 value;
+        Node *next;
+
+        Node(const T1& k, const T2& v) : key(k), value(v), next(nullptr) {}
+    } *table[10]; // Array of 10 buckets (fixed size hash table)
+
+    // Hash function to determine index in table
+    int hashFunction(const T1& key) {
+        return key % 10; // Works only for integer keys
+        // For general types, consider: return std::hash<T1>{}(key) % 10;
+    }
+
+    // Helper function to delete all nodes in a bucket
+    void deleteBucket(Node *head) {
+        while (head) {
+            Node *temp = head;
+            head = head->next;
+            delete temp;
+        }
+    }
+
+public:
+    // Constructor initializes all buckets to nullptr
+    Dictionary() {
+        for (int i = 0; i < 10; ++i)
+            table[i] = nullptr;
+    }
+
+    // Insert a key-value pair into the dictionary
+    void insertElement(const T1& k, const T2& v) {
+        int index = hashFunction(k);
+        Node *newNode = new Node(k, v); // Create new node
+        newNode->next = table[index];   // Insert at beginning (chaining)
+        table[index] = newNode;
+    }
+
+    // Search for a key and return the bucket index if found, else -1
+    int searchElement(const T1& k) {
+        int index = hashFunction(k);
+        Node *curr = table[index];
+        while (curr) {
+            if (curr->key == k)
+                return index; // Found key
+            curr = curr->next;
+        }
+        return -1; // Not found
+    }
+
+    // Delete a key-value pair by key
+    void deleteElement(const T1& k) {
+        int index = hashFunction(k);
+        Node *curr = table[index];
+        Node *prev = nullptr;
+
+        // Traverse to find the key
+        while (curr && curr->key != k) {
+            prev = curr;
+            curr = curr->next;
+        }
+
+        if (!curr) {
+            cout << "Element not found!\n";
+            return;
+        }
+
+        // Adjust links to remove node
+        if (!prev)
+            table[index] = curr->next; // First node
+        else
+            prev->next = curr->next;
+
+        delete curr; // Free memory
+    }
+
+    // Display all elements in the dictionary
+    void displayAllElements(const string& type1, const string& type2) {
+        cout << " Index\t" << type1 << "\t" << type2 << "\n";
+
+        for (int i = 0; i < 10; ++i) {
+            Node *curr = table[i];
+            if (!curr) {
+                cout << "   " << i << "\n\n"; // Empty bucket
+                continue;
+            }
+            cout << "   " << i;
+            while (curr) {
+                cout << "\t" << curr->key << "\t" << curr->value << "\n";
+                curr = curr->next;
+            }
+            cout << "\n";
+        }
+    }
+
+    // Destructor to clean up all buckets
+    ~Dictionary() {
+        for (int i = 0; i < 10; ++i)
+            deleteBucket(table[i]);
+    }
+};
+
+// Main function to interact with the user
+int main() {
+    Dictionary<long long, string> phoneBook; // Phone number dictionary
+
+    cout << "What operation do you want to perform?\n"
+         << "1: Insert a new record.\n"
+         << "2: Delete a record.\n"
+         << "3: Search for a phone number.\n"
+         << "4: Display all records.\n"
+         << "5: Exit the program.\n\n";
+
+    int choice;
+
+    while (true) {
+        cout << "Choice: ";
+        cin >> choice;
+        long long num;
+        string name;
+
+        switch (choice) {
+        case 1:
+            // Insert a new phone number and name
+            cout << "Phone Number to be inserted: ";
+            cin >> num;
+            cout << "Name to be inserted: ";
+            cin.ignore(); // Clear newline character
+            getline(cin, name); // Allows multi-word names
+            phoneBook.insertElement(num, name);
+            cout << "\n";
+            break;
+
+        case 2:
+            // Delete a phone number
+            cout << "Phone Number to be deleted: ";
+            cin >> num;
+            phoneBook.deleteElement(num);
+            cout << "\n";
+            break;
+
+        case 3:
+            // Search for a phone number
+            cout << "Enter Number to be searched: ";
+            cin >> num;
+            if (phoneBook.searchElement(num) != -1)
+                cout << "Phone Number found.\n";
+            else
+                cout << "Phone Number not found.\n";
+            cout << "\n";
+            break;
+
+        case 4:
+            // Display all records
+            cout << "\n";
+            phoneBook.displayAllElements("Phone Number", "Name");
+            cout << "\n";
+            break;
+
+        case 5:
+            // Exit program
+            cout << "Exiting the program...\n";
+            return 0;
+
+        default:
+            cout << "Invalid choice! Try again.\n";
+            break;
+        }
+    }
+
+    return 0;
+}

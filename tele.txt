@@ -1,0 +1,144 @@
+#include <iostream>
+using namespace std;
+
+struct Node {
+    int data;
+    Node *next;
+
+    Node(int val) : data(val), next(nullptr) {}
+};
+
+class hashTable {
+    Node *table[10];
+
+    void deleteListInternal(Node *n) {
+        if (n->next)
+            deleteListInternal(n->next);
+        cout << "Deleting " << n->data << "\n";
+        delete n;
+    }
+
+public:
+    hashTable() {
+        for (int i = 0; i < 10; i++)
+            table[i] = nullptr;
+    }
+
+    int hashFunction(int val) {
+        return val % 10;
+    }
+
+    void displayTable() {
+        cout << "Index\tValues";
+        for (int i = 0; i < 10; i++) {
+            cout << "\n  " << i << "\t";
+            Node *curr = table[i];
+            while (curr) {
+                cout << curr->data << (curr->next ? " -> " : "");
+                curr = curr->next;
+            }
+        }
+    }
+
+    bool searchElement(int val) {
+        Node *curr = table[hashFunction(val)];
+        while (curr) {
+            if (curr->data == val)
+                return true;
+            curr = curr->next;
+        }
+        return false;
+    }
+
+    void insertElment(int val) {
+        int index = hashFunction(val);
+        Node *newNode = new Node(val);
+        newNode->next = table[index];
+        table[index] = newNode;
+    }
+
+    void deleteElement(int val) {
+        int index = hashFunction(val);
+        Node *curr = table[index], *prev = nullptr;
+
+        if (!curr) return;
+
+        if (curr->data == val) {
+            table[index] = curr->next;
+            cout << "Deleting " << curr->data << "\n";
+            delete curr;
+            return;
+        }
+
+        while (curr && curr->data != val) {
+            prev = curr;
+            curr = curr->next;
+        }
+
+        if (!curr) return;
+
+        prev->next = curr->next;
+        cout << "Deleting " << curr->data << "\n";
+        delete curr;
+    }
+
+    ~hashTable() {
+        for (int i = 0; i < 10; i++) {
+            if (table[i])
+                deleteListInternal(table[i]);
+        }
+    }
+};
+
+int main() {
+    hashTable ht;
+
+    cout << "Operation set for the hash table:\n"
+         << "1: Insert an element.\n"
+         << "2: Delete an element.\n"
+         << "3: Display hash table.\n"
+         << "4: Search for an element.\n"
+         << "5: Exit.\n";
+
+    int choice;
+    while (true) {
+        cout << "\nChoice: ";
+        cin >> choice;
+
+        int val;
+        switch (choice) {
+        case 1:
+            cout << "Enter value of the element to be inserted: ";
+            cin >> val;
+            ht.insertElment(val);
+            cout << "\n";
+            break;
+
+        case 2:
+            cout << "Enter value of the element to be deleted: ";
+            cin >> val;
+            ht.deleteElement(val);
+            cout << "\n";
+            break;
+
+        case 3:
+            cout << "\n";
+            ht.displayTable();
+            cout << "\n";
+            break;
+
+        case 4:
+            cout << "Enter the value to be searched: ";
+            cin >> val;
+            cout << "The entered value is " << (ht.searchElement(val) ? "" : "not ") << "present in the table.\n";
+            break;
+
+        case 5:
+            cout << "Exiting the program...\n";
+            return 0;
+
+        default:
+            cout << "Enter a valid choice!\n";
+        }
+    }
+}

@@ -1,0 +1,160 @@
+#include <iostream>  // For input/output operations
+#include <cstdio>    // For file operations (fopen, fread, fwrite, fclose)
+#include <cstring>   // For string manipulations (though not strictly needed here)
+using namespace std;
+
+// Define the Student structure to store details about a student
+struct Student {
+    int rollNo;         // Roll number of the student
+    char name[50];      // Name of the student (up to 49 characters)
+    char division[10];  // Division of the student (up to 9 characters)
+    char address[100];  // Address of the student (up to 99 characters)
+};
+
+// Function to add a student to the file
+void addStudent() {
+    Student student;
+    // Open file in append binary mode to add new records at the end
+    FILE *fp = fopen("students.dat", "ab");
+
+    // Check if the file opened successfully
+    if (!fp) {
+        cout << "Error opening file!" << endl;
+        return;
+    }
+
+    // Prompt user for student details and read the inputs
+    cout << "Enter Roll Number: ";
+    cin >> student.rollNo;
+    cin.ignore();  // To ignore the newline character left by cin
+
+    cout << "Enter Name: ";
+    cin.getline(student.name, 50);
+
+    cout << "Enter Division: ";
+    cin.getline(student.division, 10);
+
+    cout << "Enter Address: ";
+    cin.getline(student.address, 100);
+
+    // Write student data to the file
+    fwrite(&student, sizeof(Student), 1, fp);
+    
+    // Close the file after writing
+    fclose(fp);
+
+    // Inform the user that the student was added successfully
+    cout << "Student added successfully!" << endl;
+}
+
+// Function to delete a student by roll number
+void deleteStudent() {
+    int rollNo;
+    cout << "Enter Roll Number to delete: ";
+    cin >> rollNo;
+
+    // Open the original file in read binary mode
+    FILE *fp = fopen("students.dat", "rb");
+    // Create a temporary file to store records excluding the deleted one
+    FILE *temp = fopen("temp.dat", "wb");
+
+    // Check if both files opened successfully
+    if (!fp || !temp) {
+        cout << "File open error!" << endl;
+        return;
+    }
+
+    Student student;
+    bool found = false;
+
+    // Read each student record from the original file
+    while (fread(&student, sizeof(Student), 1, fp)) {
+        // If the roll number matches, skip writing this record to the temporary file
+        if (student.rollNo == rollNo) {
+            found = true;  // Mark that the student was found
+        } else {
+            // Write all other records to the temporary file
+            fwrite(&student, sizeof(Student), 1, temp);
+        }
+    }
+
+    // Close both files after processing
+    fclose(fp);
+    fclose(temp);
+
+    // Delete the original file and rename the temporary file to replace it
+    remove("students.dat");
+    rename("temp.dat", "students.dat");
+
+    // Inform the user whether the student was successfully deleted
+    if (found)
+        cout << "Student deleted successfully!" << endl;
+    else
+        cout << "Student not found!" << endl;
+}
+
+// Function to display the details of a student by roll number
+void displayStudent() {
+    int rollNo;
+    cout << "Enter Roll Number to display: ";
+    cin >> rollNo;
+
+    // Open the file in read binary mode
+    FILE *fp = fopen("students.dat", "rb");
+    
+    // Check if the file opened successfully
+    if (!fp) {
+        cout << "Error opening file!" << endl;
+        return;
+    }
+
+    Student student;
+    bool found = false;
+
+    // Read each student record from the file
+    while (fread(&student, sizeof(Student), 1, fp)) {
+        // If the roll number matches, display the student's details
+        if (student.rollNo == rollNo) {
+            found = true;
+            cout << "\nStudent Details:\n";
+            cout << "Roll No: " << student.rollNo << endl;
+            cout << "Name: " << student.name << endl;
+            cout << "Division: " << student.division << endl;
+            cout << "Address: " << student.address << endl;
+            break;  // Exit the loop once the student is found
+        }
+    }
+
+    // Close the file after reading
+    fclose(fp);
+
+    // If no student was found, inform the user
+    if (!found)
+        cout << "Student not found!" << endl;
+}
+
+// Main function to provide the menu and handle user input
+int main() {
+    int choice;
+
+    // Infinite loop to keep showing the menu until the user chooses to exit
+    while (true) {
+        // Display the menu
+        cout << "\nMenu:\n";
+        cout << "1. Add Student\n";
+        cout << "2. Delete Student\n";
+        cout << "3. Display Student\n";
+        cout << "4. Exit\n";
+        cout << "Enter your choice: ";
+        cin >> choice;
+
+        // Process the user's choice
+        switch (choice) {
+            case 1: addStudent(); break;     // Call addStudent() function to add a student
+            case 2: deleteStudent(); break;  // Call deleteStudent() function to delete a student
+            case 3: displayStudent(); break; // Call displayStudent() function to display student details
+            case 4: cout << "Exiting program." << endl; return 0;  // Exit the program
+            default: cout << "Invalid choice. Try again." << endl; // Handle invalid choice
+        }
+    }
+}

@@ -1,0 +1,297 @@
+#include <iostream>
+#include <stack>
+#include <queue>
+
+using namespace std;
+
+// Structure for a node in the Binary Search Tree
+struct treenode {
+    int data;
+    treenode *left, *right;
+
+    treenode(int val) : data(val), left(nullptr), right(nullptr) {}
+};
+
+class bsTree {
+    treenode *root;
+    int height;
+
+    // Helper function to delete all nodes (used in destructor)
+    void deleteTree(treenode *src) {
+        if (src->left)
+            deleteTree(src->left);
+        if (src->right)
+            deleteTree(src->right);
+
+        cout << src->data << ", ";
+        delete src;
+    }
+
+public:
+    bsTree() : root(nullptr), height(-1) {}
+
+    // Insert a node in the BST and update height accordingly
+    void insertNode(int val) {
+        int depth = 0;
+        if (!root) {
+            root = new treenode(val);
+            height = 0;
+            return;
+        }
+
+        treenode *curr = root;
+        while (true) {
+            if (val < curr->data) {
+                if (curr->left) {
+                    curr = curr->left;
+                    depth++;
+                } else {
+                    curr->left = new treenode(val);
+                    depth++;
+                    if (depth > height)
+                        height = depth;
+                    return;
+                }
+            } else {
+                if (curr->right) {
+                    curr = curr->right;
+                    depth++;
+                } else {
+                    curr->right = new treenode(val);
+                    depth++;
+                    if (depth > height)
+                        height = depth;
+                    return;
+                }
+            }
+        }
+    }
+
+    // Return the height of the tree
+    int getHeight() {
+        return height;
+    }
+
+    // Pre-order traversal using stack (Root -> Left -> Right)
+    void preorderTraverse() {
+        if (!root) {
+            cout << "Tree is empty!\n";
+            return;
+        }
+
+        stack<treenode *> stk;
+        stk.push(root);
+
+        treenode *temp = nullptr;
+
+        while (!stk.empty()) {
+            temp = stk.top();
+            stk.pop();
+
+            if (temp->right)
+                stk.push(temp->right);
+            if (temp->left)
+                stk.push(temp->left);
+
+            cout << temp->data << " -> ";
+        }
+
+        cout << "\b\b\b\b    ";
+    }
+
+    // In-order traversal using stack (Left -> Root -> Right)
+    void inorderTraverse() {
+        if (!root) {
+            cout << "Tree is empty!\n";
+            return;
+        }
+
+        stack<treenode *> stk;
+        treenode *current = root;
+
+        while (current || !stk.empty()) {
+            while (current) {
+                stk.push(current);
+                current = current->left;
+            }
+
+            current = stk.top();
+            stk.pop();
+            cout << current->data << " -> ";
+            current = current->right;
+        }
+
+        cout << "\b\b\b\b    ";
+    }
+
+    // Post-order traversal using stack (Left -> Right -> Root)
+    void postorderTraverse() {
+        if (!root) {
+            cout << "Tree is empty!\n";
+            return;
+        }
+
+        treenode *current = root, *lastVisited = nullptr;
+        stack<treenode *> stk;
+
+        while (current || !stk.empty()) {
+            if (current) {
+                stk.push(current);
+                current = current->left;
+            } else {
+                treenode *top = stk.top();
+
+                if (top->right && top->right != lastVisited)
+                    current = top->right;
+                else {
+                    cout << top->data << " -> ";
+                    lastVisited = top;
+                    stk.pop();
+                }
+            }
+        }
+
+        cout << "\b\b\b\b    ";
+    }
+
+    // Breadth-First Search (Level-order traversal using queue)
+    void breadthFirstSearch() {
+        if (!root) {
+            cout << "Tree is empty!\n";
+            return;
+        }
+
+        queue<treenode *> bfsq;
+        bfsq.push(root);
+
+        while (!bfsq.empty()) {
+            treenode *front = bfsq.front();
+            if (front->left)
+                bfsq.push(front->left);
+            if (front->right)
+                bfsq.push(front->right);
+
+            cout << bfsq.front()->data << " -> ";
+            bfsq.pop();
+        }
+
+        cout << "\b\b\b\b    ";
+    }
+
+    // Search for a value in the BST
+    bool search(int target) {
+        treenode *temp = root;
+
+        while (temp) {
+            if (target == temp->data)
+                return true;
+            else if (target < temp->data)
+                temp = temp->left;
+            else
+                temp = temp->right;
+        }
+
+        return false;
+    }
+
+    // Display the minimum element (leftmost node)
+    void displayMin() {
+        if (!root) {
+            cout << "Tree is empty!\n";
+            return;
+        }
+
+        treenode *temp = root;
+        while (temp->left)
+            temp = temp->left;
+
+        cout << "Minimum element in the tree: " << temp->data << "\n";
+    }
+
+    // Display the maximum element (rightmost node)
+    void displayMax() {
+        if (!root) {
+            cout << "Tree is empty!\n";
+            return;
+        }
+
+        treenode *temp = root;
+        while (temp->right)
+            temp = temp->right;
+
+        cout << "Maximum element in the tree: " << temp->data << "\n";
+    }
+
+    // Destructor to delete all nodes and free memory
+    ~bsTree() {
+        cout << "Deleting tree nodes: ";
+        deleteTree(root);
+        cout << "\b\b  \n\n";
+    }
+};
+
+int main() {
+    bsTree tree;
+
+    // Inserting values into the BST
+    tree.insertNode(67);
+    tree.insertNode(46);
+    tree.insertNode(35);
+    tree.insertNode(57);
+    tree.insertNode(79);
+    tree.insertNode(60);
+    tree.insertNode(36);
+    tree.insertNode(70);
+    tree.insertNode(93);
+    tree.insertNode(75);
+    tree.insertNode(53);
+    tree.insertNode(87);
+    tree.insertNode(7);
+    tree.insertNode(3);
+    tree.insertNode(9);
+
+    // Display tree height
+    cout << "\n\nHeight of tree = " << tree.getHeight() << "\n\n";
+
+    // Breadth-First Search (Level-order)
+    cout << "Traversal using Breadth-First Search:\n";
+    tree.breadthFirstSearch();
+
+    cout << "\n\n";
+
+    // Pre-order Traversal
+    cout << "Traversal using Pre-order Traversal:\n";
+    tree.preorderTraverse();
+
+    cout << "\n\n";
+
+    // In-order Traversal
+    cout << "Traversal using In-order Traversal:\n";
+    tree.inorderTraverse();
+
+    cout << "\n\n";
+
+    // Post-order Traversal
+    cout << "Traversal using Post-order Traversal:\n";
+    tree.postorderTraverse();
+
+    cout << "\n\n";
+
+    // Display minimum and maximum values
+    tree.displayMin();
+
+    cout << "\n";
+
+    tree.displayMax();
+
+    cout << "\n";
+
+    // Search for specific values
+    cout << "Target element: 57\n";
+    cout << "Element is " << (tree.search(57) ? "" : "not") << " present.\n";
+
+    cout << "Target element: 73\n";
+    cout << "Element is " << (tree.search(73) ? "" : "not") << " present.\n";
+
+    return 0;
+}

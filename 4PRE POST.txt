@@ -1,0 +1,159 @@
+#include <iostream>
+#include <stack>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+class expressionTree {
+    // Internal node structure for the expression tree
+    struct treenode {
+        char data;                // Holds the operand or operator
+        treenode *left, *right;   // Pointers to left and right children
+
+        treenode(char c) : data(c), left(nullptr), right(nullptr) {}
+    } *root;
+
+    string prefixExpression;  // Stores the prefix expression
+
+public:
+    // Constructor to initialize the expression
+    expressionTree(const string& exp) : prefixExpression(exp), root(nullptr) {}
+
+    // Function to create the expression tree from the prefix expression
+    void createExpressionTree() {
+        int len = prefixExpression.length();
+        stack<treenode *> s;
+
+        // Traverse from right to left (prefix evaluation)
+        for (int i = len - 1; i >= 0; i--) {
+            char curr = prefixExpression[i];
+
+            if (curr == ' ')
+                continue;
+            else if (isalpha(curr))  // If operand, create node and push
+                s.push(new treenode(curr));
+            else {  // If operator, pop two nodes and form a subtree
+                if (s.size() < 2) {
+                    cout << "Invalid expression!\n";
+                    return;
+                }
+                treenode *newNode = new treenode(curr);
+                newNode->left = s.top(); s.pop();   // Left operand
+                newNode->right = s.top(); s.pop();  // Right operand
+                s.push(newNode);  // Push the new subtree
+            }
+        }
+
+        // Final root of the tree
+        if (!s.empty()) {
+            root = s.top();
+            s.pop();
+        }
+    }
+
+    // Function to perform post-order traversal (Left-Right-Root)
+    void postOrderTraversal() {
+        stack<treenode *> s;
+        vector<treenode *> visited;
+
+        if (!root) {
+            cout << "Tree is empty.\n";
+            return;
+        }
+
+        s.push(root);
+
+        while (!s.empty()) {
+            treenode *temp = s.top();
+
+            // Traverse right child if not yet visited
+            if (temp->right && find(visited.begin(), visited.end(), temp->right) == visited.end())
+                s.push(temp->right);
+
+            // Traverse left child if not yet visited
+            if (temp->left && find(visited.begin(), visited.end(), temp->left) == visited.end())
+                s.push(temp->left);
+
+            // If leaf node or both children visited, print and pop
+            if ((!temp->right && !temp->left) ||
+                (find(visited.begin(), visited.end(), temp->right) != visited.end() &&
+                 find(visited.begin(), visited.end(), temp->left) != visited.end())) {
+                cout << temp->data;
+                visited.push_back(temp);
+                s.pop();
+            }
+        }
+    }
+
+    // Function to delete the tree and free memory
+    void deleteTree() {
+        stack<treenode *> s;
+
+        if (root)
+            s.push(root);
+
+        while (!s.empty()) {
+            treenode *temp = s.top();
+            s.pop();
+
+            // Push children into the stack
+            if (temp->right)
+                s.push(temp->right);
+            if (temp->left)
+                s.push(temp->left);
+
+            // Delete current node
+            cout << "Deleting node: " << temp->data << "\n";
+            delete temp;
+        }
+
+        root = nullptr; // Reset root
+    }
+
+    // Destructor to clean up memory automatically
+    ~expressionTree() {
+        deleteTree();
+    }
+};
+
+int main() {
+    string expression;
+
+    cout << "Enter a prefix expression: ";
+    cin >> expression;
+
+    // Create the tree from user input
+    expressionTree tree(expression);
+
+    tree.createExpressionTree();
+
+    cout << "Expression tree has been created.\n"
+         << "What operation do you want to perform?\n"
+         << "1: Post-Order Traversal.\n"
+         << "2: Delete Expression Tree.\n";
+
+    int choice;
+
+    while (true) {
+        cout << "Choice: ";
+        cin >> choice;
+        switch (choice) {
+        case 1:
+            cout << "Post-Order Traversal: ";
+            tree.postOrderTraversal();
+            cout << "\n";
+            break;
+
+        case 2:
+            cout << "Deleting Expression Tree...\n";
+            tree.deleteTree();
+            cout << "Expression Tree deleted successfully! Exiting the program...\n";
+            return 0;
+
+        default:
+            cout << "Invalid choice!\n";
+        }
+    }
+
+    return -1;
+}

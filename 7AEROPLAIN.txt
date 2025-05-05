@@ -1,0 +1,231 @@
+#include <iostream>
+#include <list>
+#include <algorithm>
+
+using namespace std;
+
+class Graph {
+    struct Edge;
+
+    struct Vertex {
+        string ID;
+        list<Edge> neighbors;
+
+        Vertex(const string& id = "", const list<Edge>& nbrs = list<Edge>()) : ID(id), neighbors(nbrs) {}
+    };
+
+    struct Edge {
+        Vertex* destination;
+        float weight;
+
+        Edge(Vertex* dest = nullptr, float w = 0) : destination(dest), weight(w) {}
+    };
+
+    list<Vertex> vertices;
+    string vertex_type, edge_type, weight_type;
+
+    list<Vertex>::iterator getVertexByID(const string& vertID) {
+        return find_if(vertices.begin(), vertices.end(), [&vertID](const Vertex& v) -> bool {
+            return v.ID == vertID;
+        });
+    }
+
+public:
+    Graph(const string& v_t, const string& e_t, const string& w_t) : vertex_type(v_t), edge_type(e_t), weight_type(w_t) {}
+
+    bool insertVertex(const string& n) {
+        if (getVertexByID(n) != vertices.end()) return false;
+        vertices.push_back(Vertex(n));
+        return true;
+    }
+
+    bool updateVertexID(const string& oldID, const string& newID) {
+        auto it = getVertexByID(oldID);
+        if (it == vertices.end()) return false;
+        it->ID = newID;
+        return true;
+    }
+
+    bool removeVertex(const string& vertID) {
+        auto target = getVertexByID(vertID);
+        if (target == vertices.end()) return false;
+
+        for (auto& v : vertices) {
+            v.neighbors.remove_if([&vertID](const Edge& e) {
+                return e.destination->ID == vertID;
+            });
+        }
+
+        vertices.erase(target);
+        return true;
+    }
+
+    bool insertEdge(const string& srcVertID, const string& destVertID, float w) {
+        auto src_it = getVertexByID(srcVertID);
+        auto dest_it = getVertexByID(destVertID);
+        if (src_it == vertices.end() || dest_it == vertices.end()) return false;
+
+        auto& neighbors = src_it->neighbors;
+        if (any_of(neighbors.begin(), neighbors.end(), [dest_it](const Edge& e) {
+            return e.destination == &(*dest_it);
+        })) return false;
+
+        neighbors.push_back(Edge(&(*dest_it), w));
+        return true;
+    }
+
+    bool updateEdgeWeight(const string& srcVertID, const string& destVertID, float newWeight) {
+        auto src_it = getVertexByID(srcVertID);
+        auto dest_it = getVertexByID(destVertID);
+        if (src_it == vertices.end() || dest_it == vertices.end()) return false;
+
+        auto& neighbors = src_it->neighbors;
+        auto it = find_if(neighbors.begin(), neighbors.end(), [dest_it](const Edge& e) {
+            return e.destination == &(*dest_it);
+        });
+
+        if (it == neighbors.end()) return false;
+        it->weight = newWeight;
+        return true;
+    }
+
+    bool removeEdge(const string& srcVertID, const string& destVertID) {
+        auto src_it = getVertexByID(srcVertID);
+        auto dest_it = getVertexByID(destVertID);
+        if (src_it == vertices.end() || dest_it == vertices.end()) return false;
+
+        auto& neighbors = src_it->neighbors;
+        auto it = find_if(neighbors.begin(), neighbors.end(), [dest_it](const Edge& e) {
+            return e.destination == &(*dest_it);
+        });
+
+        if (it == neighbors.end()) return false;
+        neighbors.erase(it);
+        return true;
+    }
+
+    bool checkIfNeighbors(const string& srcVertID, const string& destVertID) {
+        auto src_it = getVertexByID(srcVertID);
+        auto dest_it = getVertexByID(destVertID);
+        if (src_it == vertices.end() || dest_it == vertices.end()) return false;
+
+        return any_of(src_it->neighbors.begin(), src_it->neighbors.end(), [dest_it](const Edge& e) {
+            return e.destination == &(*dest_it);
+        });
+    }
+
+    void printNeighbors(const string& vertID) {
+        auto it = getVertexByID(vertID);
+        if (it == vertices.end()) {
+            cout << "City not found.\n";
+            return;
+        }
+
+        if (it->neighbors.empty()) {
+            cout << "NONE\n\n";
+            return;
+        }
+
+        for (const Edge& nbr : it->neighbors) {
+            cout << vertex_type << " name: " << nbr.destination->ID
+                 << "\n" << weight_type << ": " << nbr.weight << "\n\n";
+        }
+    }
+
+    void printGraph() {
+        for (const auto& vert : vertices) {
+            cout << edge_type << " from " << vert.ID << ":\n";
+            printNeighbors(vert.ID);
+        }
+    }
+};
+
+int main() {
+    Graph flightPlan("City", "Flights", "Distance");
+
+    int choice;
+    string cityName, oldName, newName, srcCity, destCity;
+    float distance, newDistance;
+
+    cout << "Menu:\n"
+         << "1: Insert a city\n"
+         << "2: Change a city name\n"
+         << "3: Remove a city\n"
+         << "4: Insert a new flight\n"
+         << "5: Change the distance for a flight\n"
+         << "6: Remove a flight\n"
+         << "7: Check if a flight exists between two cities\n"
+         << "8: Display all the flights originating from a city\n"
+         << "9: Display all flight paths\n"
+         << "0: Exit\n\n";
+
+    while (true) {
+        cout << "Choice: ";
+        cin >> choice;
+
+        switch (choice) {
+            case 1:
+                cout << "Enter city name: ";
+                cin >> cityName;
+                cout << (flightPlan.insertVertex(cityName) ? "Inserted.\n" : "City already exists.\n");
+                break;
+            case 2:
+                cout << "Old name: ";
+                cin >> oldName;
+                cout << "New name: ";
+                cin >> newName;
+                cout << (flightPlan.updateVertexID(oldName, newName) ? "Updated.\n" : "City not found.\n");
+                break;
+            case 3:
+                cout << "City to remove: ";
+                cin >> cityName;
+                cout << (flightPlan.removeVertex(cityName) ? "Removed.\n" : "City not found.\n");
+                break;
+            case 4:
+                cout << "From: ";
+                cin >> srcCity;
+                cout << "To: ";
+                cin >> destCity;
+                cout << "Distance: ";
+                cin >> distance;
+                cout << (flightPlan.insertEdge(srcCity, destCity, distance) ? "Flight added.\n" : "Flight could not be added.\n");
+                break;
+            case 5:
+                cout << "From: ";
+                cin >> srcCity;
+                cout << "To: ";
+                cin >> destCity;
+                cout << "New distance: ";
+                cin >> newDistance;
+                cout << (flightPlan.updateEdgeWeight(srcCity, destCity, newDistance) ? "Updated.\n" : "Update failed.\n");
+                break;
+            case 6:
+                cout << "From: ";
+                cin >> srcCity;
+                cout << "To: ";
+                cin >> destCity;
+                cout << (flightPlan.removeEdge(srcCity, destCity) ? "Removed.\n" : "Flight not found.\n");
+                break;
+            case 7:
+                cout << "From: ";
+                cin >> srcCity;
+                cout << "To: ";
+                cin >> destCity;
+                cout << (flightPlan.checkIfNeighbors(srcCity, destCity) ? "Flight exists.\n" : "No such flight.\n");
+                break;
+            case 8:
+                cout << "City of origin: ";
+                cin >> srcCity;
+                flightPlan.printNeighbors(srcCity);
+                break;
+            case 9:
+                flightPlan.printGraph();
+                break;
+            case 0:
+                cout << "Exiting...\n";
+                return 0;
+            default:
+                cout << "Invalid choice.\n";
+        }
+    }
+}
